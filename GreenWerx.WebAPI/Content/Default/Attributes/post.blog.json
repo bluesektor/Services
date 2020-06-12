@@ -1,0 +1,36 @@
+﻿[
+  {
+    "Name": "Rating",
+    "ValueType": "Numeric",
+    "Value": "0",
+    "ReferenceType": "Post",
+    "Type": "Attribute",
+    "Description": "Rating",
+    "Icon": "assets/icon/discoball-200.png",
+    "RoleWeight": 0,
+    "SortOrder": 0
+  },
+    {
+    "Name": "Phone",
+    "ValueType": "String",
+    "Value": "0",
+    "ReferenceType": "Post",
+    "Type": "Attribute",
+    "Description": "Phone",
+    "Icon": "assets/icon/discoball-200.png",
+    "RoleWeight": 0,
+    "SortOrder": 1
+  },
+    {
+    "Name": "Other",
+    "ValueType": "String",
+    "Value": "0",
+    "ReferenceType": "Post",
+    "Type": "Attribute",
+    "Description": "Other",
+    "Icon": "assets/icon/discoball-200.png",
+    "RoleWeight": 0,
+    "SortOrder": 2
+  }
+
+]

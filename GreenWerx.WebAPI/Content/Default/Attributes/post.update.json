@@ -1,0 +1,14 @@
+﻿[
+    {
+    "Name": "Other",
+    "ValueType": "String",
+    "Value": "0",
+    "ReferenceType": "Post",
+    "Type": "Attribute",
+    "Description": "Other",
+    "Icon": "assets/icon/discoball-200.png",
+    "RoleWeight": 0,
+    "SortOrder": 2
+  }
+
+]
