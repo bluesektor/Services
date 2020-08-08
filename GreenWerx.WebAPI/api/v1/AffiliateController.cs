@@ -162,7 +162,7 @@ namespace GreenWerx.WebAPI.api.v1
 
 
         //var users = context.GetAll<bswp_users>();
-        //        if (users.Count() == 0)
+        //        if (users.Count() ==false)
         //            Debug.Assert(false, "SHOULD NOT FAIL");
 
         //        users.ElementAt(0).display_name = "UPDATED";// + DateTime.Now.ToString();

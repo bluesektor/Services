@@ -141,6 +141,7 @@ namespace GreenWerx.Web.api.v1
             return ServiceResponse.OK("", JsonConvert.SerializeObject(s));
         }
 
+        [System.Web.Http.AllowAnonymous]
         [System.Web.Http.HttpGet]
         [System.Web.Http.HttpPost]
         [System.Web.Http.Route("api/Apps/Public/Settings")]

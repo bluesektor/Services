@@ -100,7 +100,7 @@ namespace GreenWerx.Web.api
                 var payload = JWT.JsonWebToken.Decode(authToken, appSecret, false);
                 requestorClaims = JsonConvert.DeserializeObject<JwtClaims>(payload);
 
-                TimeSpan ts = requestorClaims.expires - DateTime.UtcNow;
+                TimeSpan ts = requestorClaims.Expires - DateTime.UtcNow;
 
                 if (ts.TotalSeconds <= 0)
                     return string.Empty;

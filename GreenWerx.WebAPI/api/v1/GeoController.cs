@@ -306,7 +306,7 @@ namespace GreenWerx.WebAPI.api.v1
             if (filter?.PrependTop > 0)
             {
                 var topLocations = locations.Where(w => w.SortOrder > 0).OrderByDescending(o => o.SortOrder).Take(filter.PrependTop);
-                if (topLocations.Count() > 0)
+                if (topLocations.Count() > 0 )
                     locations.InsertRange(0, topLocations);
             }
 

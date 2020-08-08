@@ -958,7 +958,7 @@ namespace GreenWerx.Web.api.v1
                 //    //        (w.Country.EqualsIgnoreCase(currentCountryName) ||
                 //    //         w.UUParentID ==   dbCountry.UUID));
 
-                //    //        if (cities == null || cities.Count() == 0)
+                //    //        if (cities == null || cities.Count() ==false)
                 //    //        {
                 //    //            Debug.WriteLine("-------------------- no cities found for country:" + currentCountryName);
                 //    //            continue;
@@ -1872,7 +1872,7 @@ namespace GreenWerx.Web.api.v1
             
 
             //    var users = context.GetAll<bswp_users>();
-            //    if (users.Count() == 0)
+            //    if (users.Count() ==false)
             //        Debug.Assert(false, "SHOULD NOT FAIL");
 
             //    users.ElementAt(0).display_name = "UPDATED";// + DateTime.Now.ToString();

@@ -27,7 +27,7 @@ namespace GreenWerx.Web.api.v1
                 return ServiceResponse.Error("Invalid account was sent.");
 
             AnatomyManager AnatomyTagsManager = new AnatomyManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
-            if (AnatomyTagsManager.Delete(n) > 0)
+            if (AnatomyTagsManager.Delete(n) == true)
                 return ServiceResponse.OK();
 
             return ServiceResponse.Error("An error occurred deleting this AnatomyTags.");

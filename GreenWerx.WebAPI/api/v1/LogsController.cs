@@ -202,7 +202,7 @@ namespace GreenWerx.WebAPI.api.v1
                         var attribute = JsonConvert.DeserializeObject<TMG.Attribute>(stageAttribute.StageResults);
                         if (attribute.ReferenceUUID == uuid)
                         {
-                            if (context.Delete<TMG.Attribute>(attribute) <= 0)
+                            if (context.Delete<TMG.Attribute>(attribute) == false)
                             {
                                 stageAttribute.Result = "delete failed";
                                 context.Update<StageData>(stageAttribute);
