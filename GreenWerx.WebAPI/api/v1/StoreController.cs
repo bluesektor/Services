@@ -20,6 +20,7 @@ using GreenWerx.Web.api.Helpers;
 using GreenWerx.Web.Filters;
 using GreenWerx.WebAPI.Helpers;
 using WebApi.OutputCache.V2;
+using GreenWerx.Data.Logging.Models;
 
 namespace GreenWerx.WebAPI.api.v1
 {
@@ -116,30 +117,76 @@ namespace GreenWerx.WebAPI.api.v1
             return ServiceResponse.OK("", cv);
         }
 
+
         [System.Web.Http.HttpPost]
         [System.Web.Http.HttpGet]
-        [System.Web.Http.Route("api/Store")]
-        public ServiceResult GetStoreItems()
+        [System.Web.Http.Route("api/Stores")]
+        public ServiceResult GetStores( )
+        {
+            string accountUUID = SystemFlag.Default.Account;
+            if (CurrentUser != null)
+                accountUUID = CurrentUser.AccountUUID;
+
+            LocationManager lm = new LocationManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            var stores = lm.GetAll().Where(w => w.AccountUUID == accountUUID
+                                          && w.Active == true
+                                          && w.Private == false
+                                          && w.LocationType.EqualsIgnoreCase("online store")).ToList();
+            int count = stores.Count;
+            
+                return ServiceResponse.OK("", stores, count);
+        }
+
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.HttpGet]
+        [System.Web.Http.Route("api/Stores/Accounts/{accountUUID}")]
+        public ServiceResult GetAccountStores(string accountUUID)
         {
             LocationManager lm = new LocationManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
-            Location location = lm.GetAll()?.FirstOrDefault(w => w.isDefault == true && w.LocationType.EqualsIgnoreCase("ONLINE STORE"));
+            var stores = lm.GetAll().Where(w => w.AccountUUID == accountUUID
+                                          && w.Active == true
+                                          && w.Private == false
+                                          && w.LocationType.EqualsIgnoreCase("online store")).ToList();
+            int count = stores.Count;
 
+            return ServiceResponse.OK("", stores, count);
+        }
+
+
+        //todo THIS SHOULD BE API/STORES and get store details. Use inventory endpoints to get items in the store(s)
+        //
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.HttpGet]
+        [System.Web.Http.Route("api/Stores/{uuid}")]
+        public ServiceResult GetStoreDetails(string uuid)
+        {
+            LocationManager lm = new LocationManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            Location location = lm.GetAll()?.FirstOrDefault(w =>  w.UUID == uuid);
             if (location == null)
-            {
                 return ServiceResponse.Error("Store location id could not be found. To fix this add a location and set the type to Online Store and then select default.");
-            }
 
-            InventoryManager inventoryManager = new InventoryManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
-            List<dynamic> Inventory = (List<dynamic>)inventoryManager.GetItems(location.AccountUUID)
-                    .Where(w => w.LocationUUID == location.UUID &&
-                                w.Deleted == false &&
-                                w.Published == true)
-                    // && w.Expires && w.Private == false
-                    .Cast<dynamic>().ToList();
+            return ServiceResponse.OK("", location);
 
-            DataFilter filter = this.GetFilter(Request);
-            Inventory = Inventory.Filter(ref filter);
-            return ServiceResponse.OK("", Inventory, filter.TotalRecordCount);
+            //===================== code to get inventory for store
+            //LocationManager lm = new LocationManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            //Location location = lm.GetAll()?.FirstOrDefault(w => w.isDefault == true && w.LocationType.EqualsIgnoreCase("ONLINE STORE"));
+
+            //if (location == null)
+            //{
+            //    return ServiceResponse.Error("Store location id could not be found. To fix this add a location and set the type to Online Store and then select default.");
+            //}
+
+            //InventoryManager inventoryManager = new InventoryManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            //List<dynamic> Inventory = (List<dynamic>)inventoryManager.GetItems(location.AccountUUID)
+            //        .Where(w => w.LocationUUID == location.UUID &&
+            //                    w.Deleted == false &&
+            //                    w.Published == true)
+            //        // && w.Expires && w.Private == false
+            //        .Cast<dynamic>().ToList();
+
+            //DataFilter filter = this.GetFilter(Request);
+            //Inventory = Inventory.Filter(ref filter);
+            //return ServiceResponse.OK("", Inventory, filter.TotalRecordCount);
         }
 
         [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 0)]

@@ -347,6 +347,28 @@ namespace GreenWerx.Web.api.v1
             return ServiceResponse.OK("", s);
         }
 
+
+        [System.Web.Http.AllowAnonymous]
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.HttpGet]
+        [System.Web.Http.Route("api/EventByGUUID/{guuid}")]
+        public ServiceResult GetByGUUID(string guuid)
+        {
+            if (string.IsNullOrWhiteSpace(guuid))
+                return ServiceResponse.Error("You must provide a guuid for the Event.");
+
+            EventManager EventManager = new EventManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            var res = EventManager.GetByGUUID(guuid);
+            if (res.Code != 200)
+                return res;
+            Event s = (Event)res.Result;
+
+            s.EventLocationUUID = EventManager.GetEventLocations(s.UUID)?.FirstOrDefault()?.UUID;
+            return ServiceResponse.OK("", s);
+        }
+
+
+
         //    [CacheOutput(ClientTimeSpan = 100, ServerTimeSpan = 100)]
         [System.Web.Http.AllowAnonymous]
         // [EnableThrottling(PerSecond = 3)]
@@ -476,6 +498,17 @@ namespace GreenWerx.Web.api.v1
         {
             EventManager EventManager = new EventManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
             return EventManager.GetEventLocation(eventLocationUUID);
+        }
+
+        [System.Web.Http.AllowAnonymous]
+        // [EnableThrottling(PerSecond = 3)]
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.HttpGet]
+        [System.Web.Http.Route("api/Events/Locations/guuid/{guuid}")]
+        public ServiceResult GetLocationByGUUID(string guuid)
+        {
+            EventManager EventManager = new EventManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            return EventManager.GetEventLocationByGUUID(guuid);
         }
 
         [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
@@ -762,7 +795,9 @@ namespace GreenWerx.Web.api.v1
             dbS.Status = s.Status;
             dbS.Private = s.Private;
             dbS.Reference = s.Reference;
-            
+
+            dbS.Latitude = s.Latitude;
+            dbS.Longitude = s.Longitude;
             dbS.Image = s.Image;
             dbS.SortOrder = s.SortOrder;
             dbS.Active = s.Active;

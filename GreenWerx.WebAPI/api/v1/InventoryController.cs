@@ -20,6 +20,8 @@ using GreenWerx.Utilites.Extensions;
 using GreenWerx.Web;
 using GreenWerx.Web.api;
 using GreenWerx.Web.Filters;
+using GreenWerx.Managers.Geo;
+using GreenWerx.Models.Geo;
 
 namespace GreenWerx.WebAPI.api.v1
 {
@@ -288,6 +290,35 @@ namespace GreenWerx.WebAPI.api.v1
             Inventory = Inventory.Filter( ref filter);
             return ServiceResponse.OK("", Inventory, filter.TotalRecordCount);
         }
+
+        //the original code to show items for a store
+        // may not be needed.
+        //[System.Web.Http.HttpPost]
+        //[System.Web.Http.HttpGet]
+        //[System.Web.Http.Route("api/Stores")]
+        //public ServiceResult GetStoreInventory()
+        //{
+
+        //    LocationManager lm = new LocationManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+        //    Location location = lm.GetAll()?.FirstOrDefault(w => w.isDefault == true && w.LocationType.EqualsIgnoreCase("ONLINE STORE"));
+
+        //    if (location == null)
+        //    {
+        //        return ServiceResponse.Error("Store location id could not be found. To fix this add a location and set the type to Online Store and then select default.");
+        //    }
+
+        //    InventoryManager inventoryManager = new InventoryManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+        //    List<dynamic> Inventory = (List<dynamic>)inventoryManager.GetItems(location.AccountUUID)
+        //            .Where(w => w.LocationUUID == location.UUID &&
+        //                        w.Deleted == false &&
+        //                        w.Published == true)
+        //            // && w.Expires && w.Private == false
+        //            .Cast<dynamic>().ToList();
+
+        //    DataFilter filter = this.GetFilter(Request);
+        //    Inventory = Inventory.Filter(ref filter);
+        //    return ServiceResponse.OK("", Inventory, filter.TotalRecordCount);
+        //}
 
         //[System.Web.Http.HttpPost]
         //[System.Web.Http.HttpGet]

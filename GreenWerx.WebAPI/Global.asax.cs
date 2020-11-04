@@ -25,6 +25,9 @@ using GreenWerx.Utilites.Security;
 using GreenWerx.Web;
 using GreenWerx.Web.api.Helpers;
 using GreenWerx.WebAPI.Helpers;
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
+using System.Net.Security;
 
 namespace GreenWerx.WebAPI
 {

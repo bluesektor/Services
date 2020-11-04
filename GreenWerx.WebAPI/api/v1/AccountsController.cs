@@ -228,7 +228,6 @@ namespace GreenWerx.Web.api.v1
 
         [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
         [System.Web.Http.HttpPost]
-        [System.Web.Http.HttpGet]
         [System.Web.Http.HttpDelete]
         [System.Web.Http.Route("api/Accounts/Delete")]
         public ServiceResult Delete(Account n)
@@ -236,12 +235,14 @@ namespace GreenWerx.Web.api.v1
             if (CurrentUser == null)
                 return ServiceResponse.Error("You must be logged in to access this function.");
 
+            DataFilter filter = this.GetFilter(Request);
+
             AccountManager accountManager = new AccountManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
-            return accountManager.Delete(n);
+            return accountManager.Delete(n, filter?.Purge ?? false);
         }
 
         [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
-        [System.Web.Http.HttpGet]
+        [System.Web.Http.HttpPost]
         [System.Web.Http.HttpDelete]
         [System.Web.Http.Route("api/Accounts/{accountUUID}/Delete")]
         public ServiceResult Delete(string accountUUID)
@@ -249,8 +250,10 @@ namespace GreenWerx.Web.api.v1
             if (CurrentUser == null)
                 return ServiceResponse.Error("You must be logged in to access this function.");
 
+            DataFilter filter = this.GetFilter(Request);
+
             AccountManager accountManager = new AccountManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
-            return accountManager.Delete(accountUUID);
+            return accountManager.Delete(accountUUID, filter?.Purge ?? false);
         }
 
         [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
@@ -531,6 +534,8 @@ namespace GreenWerx.Web.api.v1
             }
             else
             {
+
+
                 user = userManager.Search(userName, false)?.FirstOrDefault();
                 if (user == null)
                     return ServiceResponse.Error("Invalid username or password.");
