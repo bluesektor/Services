@@ -651,6 +651,8 @@ namespace GreenWerx.WebAPI.api.v1
 
             DataFilter filter = this.GetFilter(Request);
             currency = currency.Filter(ref filter);
+            currency = currency.GroupBy(x => x.Name.ToLower().Trim()).Select(group => group.First()).ToList();
+
             return ServiceResponse.OK("", currency, filter.TotalRecordCount);
         }
 

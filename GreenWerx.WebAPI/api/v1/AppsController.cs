@@ -33,7 +33,7 @@ using WebApiThrottle;
 
 namespace GreenWerx.Web.api.v1
 {
-    [CacheOutput(ClientTimeSpan = 100, ServerTimeSpan = 100)]
+   // [CacheOutput(ClientTimeSpan = 100, ServerTimeSpan = 100)]
     public class AppsController : ApiBaseController
     {
         private readonly SystemLogger _logger = null;
@@ -156,11 +156,8 @@ namespace GreenWerx.Web.api.v1
 
             AppManager am = new AppManager(Globals.DBConnectionKey, "web", this.GetAuthToken(Request));
 
-            List<dynamic> settings = am.GetPublicSettings("web", location?.AccountUUID).Cast<dynamic>().ToList();
-
             DataFilter filter = this.GetFilter(Request);
-            settings = settings.Filter(ref filter);
-
+            List<dynamic> settings = am.GetPublicSettings("web", location?.AccountUUID, ref filter).Cast<dynamic>().ToList();
             return ServiceResponse.OK("", settings, filter.TotalRecordCount);
         }
 
@@ -172,11 +169,8 @@ namespace GreenWerx.Web.api.v1
         {
             AppManager am = new AppManager(Globals.DBConnectionKey, "web", this.GetAuthToken(Request));
 
-            List<dynamic> settings = am.GetAppSettings("web").Cast<dynamic>().ToList();
-
             DataFilter filter = this.GetFilter(Request);
-            settings = settings.Filter(ref filter);
-
+            List<dynamic> settings = am.GetAppSettings("web", ref filter).Cast<dynamic>().ToList();
             return ServiceResponse.OK("", settings, filter.TotalRecordCount);
         }
 
@@ -546,7 +540,7 @@ namespace GreenWerx.Web.api.v1
             AppManager am = new AppManager(Globals.DBConnectionKey, "web", Request?.Headers?.Authorization?.Parameter);
             db.Domain = am.GetSetting("SiteDomain")?.Value;
 
-            db.Content = am.GetAppSettings("web")?.Where(w => w.AccountUUID == CurrentUser.AccountUUID && w.Deleted == false && w.Private == false && w.RoleWeight == 0)
+            db.Content = am.GetAppSettings("web", ref filter)?.Where(w => w.AccountUUID == CurrentUser.AccountUUID && w.Deleted == false && w.Private == false && w.RoleWeight == 0)
                  .Select(s => new KeyValuePair<string, string>(s.Name, s.Value)).ToList();
 
             switch (view)
@@ -869,6 +863,7 @@ namespace GreenWerx.Web.api.v1
 
         protected void BuildMenu(string view, ref Dashboard db)
         {
+            List<MenuItem> lst = new List<MenuItem>();
             //todo move data to settings table. make SettingsClass = "MenuItem" or "List<MenuItem>"
             //   this way we can set roleweight and operation. Store it in value as json string
             //   make the key = view name, value is entire menu for that key in json format?
@@ -880,68 +875,106 @@ namespace GreenWerx.Web.api.v1
                         href = "/",
                         label = "Home",
                         type = "link",
-                        icon = "fa fa-house"
+                        icon = "fa fa-house",
+                        SortOrder = 0
                     });
                     db.TopMenuItems.Add(new MenuItem()
                     {
                         href = "/store/",
                         label = "Store",
                         type = "link",
-                        icon = "fa fa-shopping-bag"
+                        icon = "fa fa-shopping-bag",
+                        SortOrder = 2
                     });
                     db.TopMenuItems.Add(new MenuItem()
                     {
                         href = "/about",
                         label = "About",
                         type = "link",
-                        icon = "fa fa-question"
+                        icon = "fa fa-question",
+                        SortOrder = 9
+
                     });
+
+                    db.SideMenuItems.Add(new MenuItem()
+                    {
+                        href = "/",
+                        label = "Home",
+                        type = "link",
+                        icon = "fa fa-home",
+                        SortOrder = 0
+                    });
+                    db.SideMenuItems.Add(new MenuItem()
+                    {
+                        href = "/store",
+                        label = "Store",
+                        type = "link",
+                        icon = "fa fa-shopping-bag",
+                        SortOrder = 2
+                    });
+                    db.SideMenuItems.Add(new MenuItem()
+                    {
+                        href = "/about",
+                        label = "About",
+                        type = "link",
+                        icon = "fa fa-question",
+                        SortOrder = 9
+                    });
+                    ////db.TopMenuItems = db.TopMenuItems.OrderBy(o => o.label).ToList();
                     break;
 
                 #region navbar_admin
 
                 case "navbar_admin":
-                    db.SideMenuItems.Add(new MenuItem()
+                  
+                    lst.Add(new MenuItem()
                     {
                         href = "/",
                         label = "Dashboard",
                         type = "link",
-                        icon = "fa fa-dashboard"
+                        icon = "fa fa-dashboard",
+                        SortOrder = 0
                     });
 
-                    db.SideMenuItems.Add(new MenuItem()
+                    lst.Add(new MenuItem()
                     {
                         href = "/system", //items from Models/App folder go here
                         label = "System",
                         type = "link",
                         icon = "fa fa-cogs",
+                        SortOrder = 1,
                         items = new List<MenuItem>()
                         {
+                             new MenuItem() {   href = "/system", label = "System", type = "link" },
                             new MenuItem() {   href = "/system/settings", label = "Settings", type = "link" }
                         }
                     });
 
-                    db.SideMenuItems.Add(new MenuItem()
+                    lst.Add(new MenuItem()
                     {
                         href = "/utilities",//functions from api/ToolsController go here
                         label = "Utilities",
                         type = "link",
                         icon = "fa fa-cogs",
+                        SortOrder = 2,
                         items = new List<MenuItem>()
                         {
+                              new MenuItem() {   href = "/utilities", label = "Utilities", type = "link" },
                             new MenuItem() {   href = "/utilities/tools", label = "Tools", type = "link" }
                         }
                     });
 
-                    db.SideMenuItems.Add(new MenuItem()
+                    lst.Add(new MenuItem()
                     {
                         href = "/finance",
                         label = "Finance",
                         type = "link",
                         icon = "fa fa-cogs",
+                        SortOrder = 3,
                         items = new List<MenuItem>()
                         {
                             new MenuItem() {   href = "/finance/accounts",      label = "Accounts",     type = "link" },
+                              new MenuItem() {   href = "/finance",      label = "Finance",     type = "link" },
                             new MenuItem() {   href = "/finance/pricerules",       label = "Price Rules",      type = "link" },
                             new MenuItem() {   href = "/finance/currency",      label = "Currency",     type = "link" },
                             //new MenuItem() {   href = "finance/fees",          label = "Fees",         type = "link" },
@@ -949,15 +982,18 @@ namespace GreenWerx.Web.api.v1
                         }
                     });
 
-                    db.SideMenuItems.Add(new MenuItem()
+                    lst.Add(new MenuItem()
                     {
                         href = "/store",
                         label = "Store",
                         type = "link",
                         icon = "fa fa-cogs",
+                        SortOrder = 4,
                         items = new List<MenuItem>()
                         {
                             ////new MenuItem() {   href = "/coupons", label = "Coupons", type = "link" },
+                             new MenuItem() {   href = "/store", label = "Store", type = "link" },
+                            new MenuItem() {   href = "/store/inventory", label = "Inventory", type = "link" },
                             new MenuItem() {   href = "/store/departments", label = "Departments", type = "link" },
                             new MenuItem() {   href = "/store/orders", label = "Orders", type = "link" },
                             ////new MenuItem() {   href = "/shipping", label = "Shipping", type = "link" },
@@ -966,70 +1002,80 @@ namespace GreenWerx.Web.api.v1
                         }
                     });
 
-                    db.SideMenuItems.Add(new MenuItem()
+                    lst.Add(new MenuItem()
                     {
                         href = "/identities",
                         label = "Identity Management",
                         type = "link",
                         icon = "fa fa-cogs",
+                        SortOrder = 5,
                         items = new List<MenuItem>()
                         {
+                             new MenuItem() {   href = "/identities", label = "Identity Management", type = "link" },
                             new MenuItem() {   href = "/membership/users", label = "Users", type = "link" },
                             new MenuItem() {   href = "/membership/accounts", label = "Accounts", type = "link" },
                             new MenuItem() {   href = "/membership/roles", label = "Roles", type = "link" }
                         }
                     });
 
-                    db.SideMenuItems.Add(new MenuItem()
+                    lst.Add(new MenuItem()
                     {
                         href = "/events/events", //todo change to /events/dashboard  when added to client
                         label = "Events",
                         type = "link",
                         icon = "fa fa-cogs",
+                        SortOrder = 6,
                         items = new List<MenuItem>()
                         {
+                              new MenuItem() {   href = "/events", label = "Events", type = "link" },
                             new MenuItem() {   href = "/events/locations", label = "Locations", type = "link" }
                         }
                     });
 
-                    db.SideMenuItems.Add(new MenuItem()
+                    lst.Add(new MenuItem()
                     {
                         href = "/general",
                         label = "Misc.",
                         type = "link",
                         icon = "fa fa-cogs",
+                        SortOrder =7,
                         items = new List<MenuItem>()
                         {
+                            new MenuItem() {   href = "/general", label = "General", type = "link" },
                             new MenuItem() {   href = "/general/measures", label = "Measures", type = "link" },
                             new MenuItem() {   href = "/general/categories", label = "Categories", type = "link" },
                             new MenuItem() {   href = "/general/attributes", label = "Attributes", type = "link" }
                         }
                     });
 
-                    db.SideMenuItems.Add(new MenuItem()
+                    lst.Add(new MenuItem()
                     {
                         href = "/assets",
                         label = "Assets",
                         type = "link",
                         icon = "fa fa-cogs",
+                        SortOrder =8,
                         items = new List<MenuItem>()
                         {
-                            new MenuItem() {   href = "/assets/inventory", label = "Inventory", type = "link" },
+                          //  new MenuItem() {   href = "/assets/inventory", label = "Inventory", type = "link" },
+                            new MenuItem() {   href = "/assets", label = "Assets", type = "link" },
                             new MenuItem() {   href = "/assets/locations", label = "Locations", type = "link" },
                             new MenuItem() {   href = "/assets/products", label = "Products", type = "link" },
                             new MenuItem() {   href = "/assets/strains", label = "Strains", type = "link" }
                         }
                     });
 
-                    db.SideMenuItems.Add(new MenuItem()
+                    lst.Add(new MenuItem()
                     {
                         href = "/about",
                         label = "About",
                         type = "link",
-                        icon = "fa fa-question"
+                        icon = "fa fa-question",
+                        SortOrder = 20
                     });
+                    db.SideMenuItems = lst.OrderBy(o => o.SortOrder).ToList();
                     break;
-
+                   
                 #endregion navbar_admin
 
                 default:
@@ -1038,27 +1084,57 @@ namespace GreenWerx.Web.api.v1
                         href = "/",
                         label = "Home",
                         type = "link",
-                        icon = "fa fa-home"
+                        icon = "fa fa-home",
+                        SortOrder = 0
                     });
                     db.TopMenuItems.Add(new MenuItem()
                     {
                         href = "/store",
                         label = "Store",
                         type = "link",
-                        icon = "fa fa-shopping-bag"
+                        icon = "fa fa-shopping-bag",
+                        SortOrder = 2
                     });
                     db.TopMenuItems.Add(new MenuItem()
                     {
                         href = "/about",
                         label = "About",
                         type = "link",
-                        icon = "fa fa-question"
+                        icon = "fa fa-question",
+                        SortOrder = 9
                     });
+
+                    db.SideMenuItems.Add(new MenuItem()
+                    {
+                        href = "/",
+                        label = "Home",
+                        type = "link",
+                        icon = "fa fa-home",
+                        SortOrder = 0
+                    });
+                    db.SideMenuItems.Add(new MenuItem()
+                    {
+                        href = "/store",
+                        label = "Store",
+                        type = "link",
+                        icon = "fa fa-shopping-bag",
+                        SortOrder = 2
+                    });
+                    db.SideMenuItems.Add(new MenuItem()
+                    {
+                        href = "/about",
+                        label = "About",
+                        type = "link",
+                        icon = "fa fa-question",
+                        SortOrder = 9
+                    });
+
+                    ////db.TopMenuItems = db.TopMenuItems.OrderBy(o => o.label).ToList();
                     break;
             }
 
-            db.SideMenuItems = db.SideMenuItems.OrderBy(o => o.label).ToList();
-            ////db.TopMenuItems = db.TopMenuItems.OrderBy(o => o.label).ToList();
+            
+            
         }
 
         private bool IsInstallReady()

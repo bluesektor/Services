@@ -17,6 +17,7 @@ using GreenWerx.Web.api.Helpers;
 using GreenWerx.Web.Filters;
 using GreenWerx.Web.Models;
 using WebApiThrottle;
+using System.Web.Http;
 
 namespace GreenWerx.Web.api.v1
 {
@@ -188,7 +189,7 @@ namespace GreenWerx.Web.api.v1
             return res;
         }
 
-        [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
+       // [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
         [System.Web.Http.HttpGet]
         [System.Web.Http.Route("api/Users/{name}")]
         public ServiceResult Search(string name)
@@ -608,5 +609,19 @@ namespace GreenWerx.Web.api.v1
             //#endif
             return res;
         }
+
+       // [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.Route("api/Password/Strength")]
+        public ServiceResult GetPasswordStrength([FromBody]string password)
+        {
+            var strength = PasswordHash.CheckStrength(password);
+            if (strength < PasswordHash.PasswordScore.Medium) { 
+               return ServiceResponse.Error("Password is too weak. ", strength);
+             }
+             return ServiceResponse.OK("", strength);
+          
+        }
+
     }
 }

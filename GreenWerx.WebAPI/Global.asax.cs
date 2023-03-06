@@ -68,6 +68,7 @@ namespace GreenWerx.WebAPI
 
         private void Application_BeginRequest(object sender, EventArgs e)
         {
+          //  _appManager.AssignEventsToEventLocations();
             if (requests == null)
                 requests = new List<RequestLog>();
 

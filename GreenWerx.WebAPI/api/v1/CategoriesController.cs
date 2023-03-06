@@ -95,11 +95,11 @@ namespace GreenWerx.Web.api.v1
         {
             if (CurrentUser == null)
                 return ServiceResponse.Error("You must be logged in to access this function.");
-
-            CategoryManager CategoryManager = new CategoryManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
-            List<dynamic> Categorys = (List<dynamic>)CategoryManager.GetCategories(CurrentUser.AccountUUID, false, true).Cast<dynamic>().ToList();
             DataFilter filter = this.GetFilter(Request);
-            return ServiceResponse.OK("", Categorys, filter.TotalRecordCount);
+            CategoryManager CategoryManager = new CategoryManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            List<dynamic> Categories = (List<dynamic>)CategoryManager.GetCategories(CurrentUser.AccountUUID, false, true).Cast<dynamic>().ToList();
+            Categories = Categories.Filter(ref filter);
+            return ServiceResponse.OK("", Categories, filter.TotalRecordCount);
         }
 
         [CacheOutput(ClientTimeSpan = 100, ServerTimeSpan = 100)]

@@ -83,12 +83,12 @@ namespace GreenWerx.Web.api.v1
             {
                 string body = Request.Content.ReadAsStringAsync().Result;
                 //  if (content == null)
-                //      return ServiceResponse.Error("No permissions were sent.");
+                //      return ServiceResponse.Error("No location was sent.");
 
                 // string body = content.Result;
 
                 if (string.IsNullOrEmpty(body))
-                    return ServiceResponse.Error("No permissions were sent.");
+                    return ServiceResponse.Error("No location was sent.");
 
                 EventLocation eventLocation = JsonConvert.DeserializeObject<EventLocation>(body);
 
@@ -268,6 +268,18 @@ namespace GreenWerx.Web.api.v1
             return ServiceResponse.OK("", locations);
         }
 
+        [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.HttpGet]
+        [System.Web.Http.Route("api/Events/{eventUUID}/Locations/Account")]
+        public ServiceResult GetAccountEventLocations(string eventUUID)
+        {
+            EventManager EventManager = new EventManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            var locations = EventManager.GetAccountEventLocations(CurrentUser?.AccountUUID, eventUUID);
+            return ServiceResponse.OK("", locations);
+        }
+
+
         // [EnableThrottling(PerSecond = 1, PerMinute = 20, PerHour = 200, PerDay = 1500, PerWeek = 3000)]
         [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
         [System.Web.Http.HttpPost]
@@ -343,7 +355,7 @@ namespace GreenWerx.Web.api.v1
                 return res;
             Event s = (Event)res.Result;
 
-            s.EventLocationUUID = EventManager.GetEventLocations(s.UUID)?.FirstOrDefault()?.UUID;
+            //s.EventLocationUUID = EventManager.GetEventLocations(s.UUID)?.FirstOrDefault()?.UUID;
             return ServiceResponse.OK("", s);
         }
 
@@ -363,7 +375,7 @@ namespace GreenWerx.Web.api.v1
                 return res;
             Event s = (Event)res.Result;
 
-            s.EventLocationUUID = EventManager.GetEventLocations(s.UUID)?.FirstOrDefault()?.UUID;
+            //s.EventLocationUUID = EventManager.GetEventLocations(s.UUID)?.FirstOrDefault()?.UUID;
             return ServiceResponse.OK("", s);
         }
 
@@ -500,6 +512,18 @@ namespace GreenWerx.Web.api.v1
             return EventManager.GetEventLocation(eventLocationUUID);
         }
 
+        //    [CacheOutput(ClientTimeSpan = 100, ServerTimeSpan = 100)]
+        [System.Web.Http.AllowAnonymous]
+        // [EnableThrottling(PerSecond = 3)]
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.HttpGet]
+        [System.Web.Http.Route("api/Events/{eventUUID}/Location")]
+        public ServiceResult GetLocationByEventUUID(string eventUUID)
+        {
+            EventManager EventManager = new EventManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            return EventManager.GetEventLocationByEventUUID(eventUUID);
+        }
+
         [System.Web.Http.AllowAnonymous]
         // [EnableThrottling(PerSecond = 3)]
         [System.Web.Http.HttpPost]
@@ -521,7 +545,7 @@ namespace GreenWerx.Web.api.v1
             {
                 string body = Request.Content.ReadAsStringAsync().Result;
                 //  if (content == null)
-                //      return ServiceResponse.Error("No permissions were sent.");
+                //      return ServiceResponse.Error("No event was sent.");
 
                 // string body = content.Result;
 
@@ -598,8 +622,9 @@ namespace GreenWerx.Web.api.v1
         //
         [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
         [System.Web.Http.HttpPost]
+        [System.Web.Http.Route("api/Events/{eventUUID}/Activate")]
         [System.Web.Http.Route("api/Events/{eventUUID}/Publish")]
-        public ServiceResult PublishEvent(string eventUUID)
+        public ServiceResult ActivateEvent(string eventUUID)
         {
             if (CurrentUser == null)
                 return ServiceResponse.Error("You must be logged in to access this function.");
@@ -622,7 +647,7 @@ namespace GreenWerx.Web.api.v1
 
                 evnt.Status = "";
                 evnt.Reference = "";
-                evnt.Private = false;
+                evnt.Active = true;
                 return  em.Update(evnt);
 
             }
@@ -676,6 +701,157 @@ namespace GreenWerx.Web.api.v1
             return res;
         }
 
+        #region EventLocation 
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="matchEvent">
+        /// Because we can create multiple records for the same event location the
+        /// previous locations combo doesn't always pull the matching event.
+        /// So try and match  the event location to the even</param>
+        /// <returns></returns>
+        [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 0)]
+        // [EnableThrottling(PerSecond = 1)]
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.Route("api/Events/Location/Insert")]
+        [System.Web.Http.Route("api/Events/Location/Add")]  
+        public ServiceResult AddEventLocation() 
+        {
+            if (CurrentUser == null)
+            {
+                string authToken = this.GetAuthToken(Request);
+                SessionManager sessionManager = new SessionManager(Globals.DBConnectionKey);
+
+                UserSession us = sessionManager.GetSession(authToken);
+                if (us == null)
+                    return ServiceResponse.Error("You must be logged in to access this function.");
+
+                if (string.IsNullOrWhiteSpace(us.UserData))
+                    return ServiceResponse.Error("Couldn't retrieve posted data.");
+            }
+
+            try
+            {
+                string body = Request.Content.ReadAsStringAsync().Result;
+
+                if (string.IsNullOrEmpty(body))
+                    return ServiceResponse.Error("No location was sent.");
+
+                EventLocation clientEventLocation = JsonConvert.DeserializeObject<EventLocation>(body);
+
+                if (clientEventLocation == null)
+                    return ServiceResponse.Error("Invalid location posted to server.");
+
+                if (string.IsNullOrWhiteSpace(clientEventLocation.EventUUID))
+                    return ServiceResponse.Error("You must assign an event to this location.");
+
+                EventManager EventManager = new EventManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+
+                var resEvent = EventManager.Get(clientEventLocation.EventUUID);
+                if (resEvent.Code != 200 || resEvent.Result == null)
+                    return ServiceResponse.Error("Event was not found for this location.");
+
+                if (!string.IsNullOrWhiteSpace(clientEventLocation.Name))
+                    clientEventLocation.Name = clientEventLocation.Name.Trim();
+            
+
+                //var dbEventLocationRes = EventManager.GetEventLocation(clientEventLocation.UUID, clientEventLocation.EventUUID);
+
+                //if (dbEventLocationRes.Code == 200)
+                //    return ServiceResponse.Error("Event location already exists.");
+
+                // this event location doesn't exist so create it.
+                clientEventLocation.CreatedBy = CurrentUser.UUID;
+                clientEventLocation.UUID = Guid.NewGuid().ToString("N");
+                clientEventLocation.AccountUUID = CurrentUser.AccountUUID;
+                clientEventLocation.DateCreated = DateTime.UtcNow;
+
+                if (string.IsNullOrWhiteSpace(clientEventLocation.Email) && clientEventLocation.CreatedBy == CurrentUser.UUID)
+                    clientEventLocation.Email = Cipher.Crypt(Globals.Application.AppSetting("AppKey"), CurrentUser.Email.ToLower(), true);
+
+                return EventManager.InsertEventLocation(clientEventLocation);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResponse.Error("Failed to save event location.");
+            }
+        }
+
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="matchEvent">
+        /// Because we can create multiple records for the same event location the
+        /// previous locations combo doesn't always pull the matching event.
+        /// So try and match  the event location to the even</param>
+        /// <returns></returns>
+        [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 0)]
+        // [EnableThrottling(PerSecond = 1)]
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.Route("api/Events/Location/Update")] ///{matchEvent
+        public ServiceResult UpdateEventLocation()//bool matchEvent)
+        {
+            if (CurrentUser == null)
+            {
+                string authToken = this.GetAuthToken(Request);
+                SessionManager sessionManager = new SessionManager(Globals.DBConnectionKey);
+
+                UserSession us = sessionManager.GetSession(authToken);
+                if (us == null)
+                    return ServiceResponse.Error("You must be logged in to access this function.");
+
+                if (string.IsNullOrWhiteSpace(us.UserData))
+                    return ServiceResponse.Error("Couldn't retrieve posted data.");
+            }
+
+            try
+            {
+                string body = Request.Content.ReadAsStringAsync().Result;
+
+                if (string.IsNullOrEmpty(body))
+                    return ServiceResponse.Error("No location was sent.");
+
+                EventLocation clientEventLocation = JsonConvert.DeserializeObject<EventLocation>(body);
+
+                if (clientEventLocation == null)
+                    return ServiceResponse.Error("Invalid location posted to server.");
+
+                if (string.IsNullOrWhiteSpace(clientEventLocation.EventUUID))
+                    return ServiceResponse.Error("You must assign an event to this location.");
+
+                EventManager EventManager = new EventManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+
+                var resEvent = EventManager.Get(clientEventLocation.EventUUID);
+                if (resEvent.Code != 200 || resEvent.Result == null)
+                    return ServiceResponse.Error("Event was not found for this location.");
+
+                if (!string.IsNullOrWhiteSpace(clientEventLocation.Name))
+                    clientEventLocation.Name = clientEventLocation.Name.Trim();
+
+                var dbEventLocationRes = EventManager.GetEventLocation(clientEventLocation.UUID, clientEventLocation.EventUUID);
+
+                if (dbEventLocationRes.Code == 200)
+                {
+                    clientEventLocation.DateCreated = DateTime.UtcNow;// so we get the most recent location
+                    return EventManager.UpdateEventLocation(clientEventLocation);
+                }
+
+                // this event location doesn't exist so create it.
+                clientEventLocation.CreatedBy = CurrentUser.UUID;
+                clientEventLocation.AccountUUID = CurrentUser.AccountUUID;
+                clientEventLocation.DateCreated = DateTime.UtcNow;
+
+                if (string.IsNullOrWhiteSpace(clientEventLocation.Email) && clientEventLocation.CreatedBy == CurrentUser.UUID)
+                    clientEventLocation.Email = Cipher.Crypt(Globals.Application.AppSetting("AppKey"), CurrentUser.Email.ToLower(), true);
+
+                return EventManager.InsertEventLocation(clientEventLocation);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResponse.Error("Failed to save event location.");
+            }
+        }
+
         /// <summary>
         ///
         /// </summary>
@@ -708,7 +884,7 @@ namespace GreenWerx.Web.api.v1
                 string body = Request.Content.ReadAsStringAsync().Result;
 
                 if (string.IsNullOrEmpty(body))
-                    return ServiceResponse.Error("No permissions were sent.");
+                    return ServiceResponse.Error("No location was sent.");
 
                 EventLocation clientEventLocation = JsonConvert.DeserializeObject<EventLocation>(body);
 
@@ -741,7 +917,7 @@ namespace GreenWerx.Web.api.v1
 
                     return EventManager.InsertEventLocation(clientEventLocation);
                 }
-
+                clientEventLocation.DateCreated = DateTime.UtcNow;// so we get the most recent location
                 return EventManager.UpdateEventLocation(clientEventLocation);
             }
             catch (Exception ex)
@@ -749,7 +925,7 @@ namespace GreenWerx.Web.api.v1
                 return ServiceResponse.Error("Failed to save event location.");
             }
         }
-
+        #endregion
         /// <summary>
         /// Fields updated..
         ///     Category
@@ -827,12 +1003,12 @@ namespace GreenWerx.Web.api.v1
             {
                 Task<string> content = Request.Content.ReadAsStringAsync();
                 if (content == null)
-                    return ServiceResponse.Error("No permissions were sent.");
+                    return ServiceResponse.Error("No event was sent.");
 
                 string body = content.Result;
 
                 if (string.IsNullOrEmpty(body))
-                    return ServiceResponse.Error("No permissions were sent.");
+                    return ServiceResponse.Error("No event was sent.");
 
                 List<Event> changedItems = JsonConvert.DeserializeObject<List<Event>>(body);
 
@@ -887,6 +1063,8 @@ namespace GreenWerx.Web.api.v1
                     databaseItem.NSFW = changedItem.NSFW;
                     databaseItem.IsAffiliate = changedItem.IsAffiliate;
                     databaseItem.HostAccountUUID = changedItem.HostAccountUUID;
+                    databaseItem.TakeOver = changedItem.TakeOver;
+                    databaseItem.Virtual = changedItem.Virtual;
 
                     if (CurrentUser.SiteAdmin)
                     {
@@ -909,7 +1087,7 @@ namespace GreenWerx.Web.api.v1
             res.Message = msg.ToString();
             return res;
         }
-
+        /*
         [System.Web.Http.AllowAnonymous]
         // [EnableThrottling(PerSecond = 1)]
         [System.Web.Http.HttpPost]
@@ -920,12 +1098,12 @@ namespace GreenWerx.Web.api.v1
             {
                 string body = Request.Content.ReadAsStringAsync().Result;
                 //  if (content == null)
-                //      return ServiceResponse.Error("No permissions were sent.");
+                //      return ServiceResponse.Error("No location was sent.");
 
                 // string body = content.Result;
 
                 if (string.IsNullOrEmpty(body))
-                    return ServiceResponse.Error("No permissions were sent.");
+                    return ServiceResponse.Error("No location was sent.");
 
                 EventLocation eventLocation = JsonConvert.DeserializeObject<EventLocation>(body);
 
@@ -963,5 +1141,6 @@ namespace GreenWerx.Web.api.v1
                 return ServiceResponse.Error("Failed to save event location.");
             }
         }
+        */
     }
 }

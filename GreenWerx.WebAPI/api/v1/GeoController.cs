@@ -362,12 +362,12 @@ namespace GreenWerx.WebAPI.api.v1
             {
                 string body = Request.Content.ReadAsStringAsync().Result;
                 //  if (content == null)
-                //      return ServiceResponse.Error("No permissions were sent.");
+                //      return ServiceResponse.Error("No location was sent.");
 
                 // string body = content.Result;
 
                 if (string.IsNullOrEmpty(body))
-                    return ServiceResponse.Error("No permissions were sent.");
+                    return ServiceResponse.Error("No location was sent.");
 
                 Location geo = JsonConvert.DeserializeObject<Location>(body);
 
@@ -554,10 +554,13 @@ namespace GreenWerx.WebAPI.api.v1
                 return ServiceResponse.Error("Location was not found.");
 
             dbP.Name = pv.Name;
+            dbP.isDefault = pv.isDefault;
             dbP.Address1 = pv.Address1;
             dbP.Address2 = pv.Address2;
             dbP.City = pv.City;
             dbP.State = pv.State;
+            dbP.Country = pv.Country;
+            dbP.County = pv.County;
             dbP.Postal = pv.Postal;
             dbP.LocationType = pv.LocationType;
             dbP.Latitude = pv.Latitude;

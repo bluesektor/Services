@@ -31,6 +31,10 @@ using GreenWerx.Utilites.Extensions;
 using GreenWerx.Web.Filters;
 using WebApi.OutputCache.V2;
 using TMG = GreenWerx.Models.General;
+using GreenWerx.Managers.Store;
+using GreenWerx.Models.Store;
+using GreenWerx.Managers.Finance;
+using GreenWerx.Models.Finance;
 
 namespace GreenWerx.Web.api.v1
 {
@@ -171,15 +175,14 @@ namespace GreenWerx.Web.api.v1
         [System.Web.Http.Route("api/Attributes")]
         public ServiceResult GetAttributes()
         {
-            if (CurrentUser == null)
-                return ServiceResponse.Error("You must be logged in to access this function.");
+            //if (CurrentUser == null)
+            //    return ServiceResponse.Error("You must be logged in to access this function.");
 
             AttributeManager AttributeManager = new AttributeManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
 
             DataFilter filter = this.GetFilter(Request);
-            List<dynamic> Attributes = (List<dynamic>)AttributeManager.GetAttributes(CurrentUser.AccountUUID, ref filter).Cast<dynamic>().ToList();
-
-            Attributes = Attributes.Filter(ref filter);
+            List<dynamic> Attributes = (List<dynamic>)AttributeManager.GetAttributes(CurrentUser?.AccountUUID, ref filter).Cast<dynamic>().ToList();
+            
             return ServiceResponse.OK("", Attributes, filter.TotalRecordCount);
         }
 
@@ -386,7 +389,7 @@ namespace GreenWerx.Web.api.v1
                         string thumbFile = ImageEx.CreateThumbnailImage(file, 64);
                         string ImageUrl = fileName;
                         string fullUrl = this.Request.RequestUri.Scheme + "://" + this.Request.RequestUri.Authority + basePath + "/";  // "/Content/Uploads/" + this.CurrentUser.UUID + "/";
-                        pathToImage = fullUrl + thumbFile;  // ImageUrl;
+                        pathToImage = fullUrl + "/" + ImageUrl;  // ImageUrl;
 
                         if (fileResult.Default)
                             this.UpdateImageURL(UUID, type, pathToImage);//Now update the database.
@@ -433,6 +436,35 @@ namespace GreenWerx.Web.api.v1
                 _logger.InsertError(ex.DeserializeException(false), "AttributesController", "PostFile");
                 return ServiceResponse.Error("Upload failed.");
             }
+        }
+
+        
+        [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.HttpGet]
+        [System.Web.Http.Route("api/Attributes/DataTypes")]
+        public ServiceResult GetDataTypes( )
+        {
+            if (CurrentUser == null)
+                return ServiceResponse.Error("You must be logged in to access this function.");
+
+            DataFilter filter = this.GetFilter(Request);
+            AttributeManager AttributeManager = new AttributeManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            return AttributeManager.GetDataTypes(ref filter);
+        }
+
+        [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
+        [System.Web.Http.HttpPost]
+        [System.Web.Http.HttpGet]
+        [System.Web.Http.Route("api/Attributes/Data/Type/{typeName}")]
+        public ServiceResult GetDataForType( string typeName)
+        {
+            if (CurrentUser == null)
+                return ServiceResponse.Error("You must be logged in to access this function.");
+
+            DataFilter filter = this.GetFilter(Request);
+            AttributeManager AttributeManager = new AttributeManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            return AttributeManager.GetDataForType(typeName, CurrentUser.AccountUUID,ref filter);
         }
 
         //[ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
@@ -496,6 +528,25 @@ namespace GreenWerx.Web.api.v1
         {
             switch (type.ToUpper())
             {
+                case "INVENTORYITEM":
+                    InventoryManager inventoryManager = new InventoryManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+                    var iiRes = inventoryManager.Get(uuid);
+                    if (iiRes.Code != 200)
+                        return;
+
+                    InventoryItem ii = (InventoryItem)iiRes.Result;
+                    ii.Image = imageURL;
+                    inventoryManager.Update(ii);
+                    break;
+                case "CURRENCY":
+                    CurrencyManager cm = new CurrencyManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+                    var curRes = cm.Get(uuid);
+                    if (curRes.Code != 200)
+                        return;
+                    Currency c = (Currency)curRes.Result;
+                    c.Image = imageURL;
+                    cm.Update(c);
+                    break;
                 case "EVENT":
                     EventManager evtManager = new EventManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
                     var eres = evtManager.Get(uuid);
@@ -513,7 +564,15 @@ namespace GreenWerx.Web.api.v1
                 case "PROFILEMEMBER":
 
                     break;
-
+                case "PRODUCT":
+                    ProductManager pm = new ProductManager(Globals.DBConnectionKey, Request.Headers.Authorization?.Parameter);
+                    var productRes = pm.Get(uuid);
+                    if (productRes.Code != 200)
+                        return;
+                    var product = (Product)productRes.Result;
+                    product.Image = imageURL;
+                    pm.Update(product);
+                    break;
                 case "PROFILE":
                     ProfileManager profileManager = new ProfileManager(Globals.DBConnectionKey, Request.Headers.Authorization?.Parameter);
                     var res2 = profileManager.Get(uuid);

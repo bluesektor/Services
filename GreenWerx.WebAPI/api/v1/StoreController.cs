@@ -128,9 +128,14 @@ namespace GreenWerx.WebAPI.api.v1
                 accountUUID = CurrentUser.AccountUUID;
 
             LocationManager lm = new LocationManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
-            var stores = lm.GetAll().Where(w => w.AccountUUID == accountUUID
+            var stores = lm.GetAll().Where(w =>( ( w.AccountUUID == accountUUID
                                           && w.Active == true
-                                          && w.Private == false
+                                          && w.Private == false ) 
+                                          ||
+                                          (w.isDefault == true  //don't match by account
+                                           && w.Active == true
+                                          && w.Private == false))
+
                                           && w.LocationType.EqualsIgnoreCase("online store")).ToList();
             int count = stores.Count;
             

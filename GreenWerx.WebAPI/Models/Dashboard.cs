@@ -49,6 +49,8 @@ namespace GreenWerx.Web.Models
         [StringLength(32)]
         public string UserUUID { get; set; }
 
+        public string UserName { get; set; }
+
         public string View { get; set; }
     }
 }

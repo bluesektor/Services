@@ -95,6 +95,7 @@ namespace GreenWerx.Web.api.v1
                 settings.MailHost = Globals.Application.AppSetting("MailHost");
                 settings.MailPort = StringEx.ConvertTo<int>(Globals.Application.AppSetting("MailPort"));
                 settings.SiteDomain = Globals.Application.AppSetting("SiteDomain");
+                settings.ApiUrl = Globals.Application.AppSetting("ApiUrl");
                 settings.EmailDomain = Globals.Application.AppSetting("EmailDomain");
                 settings.SiteEmail = Globals.Application.AppSetting("SiteEmail");
                 settings.UseSSL = StringEx.ConvertTo<bool>(Globals.Application.AppSetting("UseSSL"));

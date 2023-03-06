@@ -20,7 +20,7 @@ using WebApiThrottle;
 
 namespace GreenWerx.Web.api.v1
 {
-    [CacheOutput(ClientTimeSpan = 100, ServerTimeSpan = 100)]
+   // [CacheOutput(ClientTimeSpan = 100, ServerTimeSpan = 100)]
     public class StrainsController : ApiBaseController
     {
         public StrainsController()

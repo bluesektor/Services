@@ -153,7 +153,7 @@ namespace GreenWerx.Web.api.v1
 
             UnitOfMeasureManager UnitsOfMeasureManager = new UnitOfMeasureManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
             DataFilter filter = this.GetFilter(Request);
-            List<dynamic> UnitOfMeasures = UnitsOfMeasureManager.GetUnitsOfMeasure(CurrentUser.AccountUUID, ref filter).Cast<dynamic>().ToList();
+            List<dynamic> UnitOfMeasures = UnitsOfMeasureManager.GetUnitsOfMeasure(CurrentUser.AccountUUID, ref filter, true).Cast<dynamic>().ToList();
             return ServiceResponse.OK("", UnitOfMeasures, filter.TotalRecordCount);
         }
 

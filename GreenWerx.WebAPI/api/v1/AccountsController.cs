@@ -443,6 +443,7 @@ namespace GreenWerx.Web.api.v1
         public ServiceResult Insert(Account n)
         {
             AccountManager accountManager = new AccountManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
+            
             var res = accountManager.Insert(n);
             if (res.Code != 200)
                 return res;
@@ -648,6 +649,7 @@ namespace GreenWerx.Web.api.v1
             dashBoard.UserUUID = user.UUID;
             dashBoard.AccountUUID = user.AccountUUID;
             dashBoard.ReturnUrl = credentials.ReturnUrl;
+            dashBoard.UserName = user.Name;
 
             dashBoard.IsAdmin = user.SiteAdmin == true ? true : roleManager.IsUserRequestAuthorized(dashBoard.UserUUID, dashBoard.AccountUUID, "/Admin");
             ProfileManager profileManager = new ProfileManager(Globals.DBConnectionKey, Request.Headers.Authorization?.Parameter);
@@ -840,10 +842,22 @@ namespace GreenWerx.Web.api.v1
             ////        return ServiceResponse.Error("Code doesn't match.");
             ////}
 
+            //TODO if get check for validation email, look at "log" first and see if was sent. if not try resending
             ServiceResult res = await userManager.RegisterUserAsync(ur, approved, ip);
             if (res.Code != 200 || sendValidationEmail == false)
-                return res;
+            {
+                if (res.Status != "senduseremailvalidationasync.FAILED")
+                    return res;
+          
+                //if found set status to this     validateRes.Status = ;
+                // in returned function resend the validation email. Result is the MailMessage object serialized.
 
+                //res.Status = "senduseremailvalidationasync.FAILED";
+                //_logger.InsertError(JsonConvert.SerializeObject(mail), user.Email, "senduseremailvalidationasync.FAILED");
+                //SMTP mailServer = new SMTP(this._connectionKey, settings);
+                //var res = mailServer.SendMail(mail);
+                return res;
+            }
             User newUser = (User)res.Result;
 
             #region add to affiliate db 
@@ -871,6 +885,7 @@ namespace GreenWerx.Web.api.v1
             settings.MailHost = Globals.Application.AppSetting("MailHost");
             settings.MailPort = StringEx.ConvertTo<int>(Globals.Application.AppSetting("MailPort"));
             settings.SiteDomain = Globals.Application.AppSetting("SiteDomain");
+            settings.ApiUrl = Globals.Application.AppSetting("ApiUrl");
             settings.EmailDomain = Globals.Application.AppSetting("EmailDomain");
             settings.SiteEmail = Globals.Application.AppSetting("SiteEmail");
             settings.UseSSL = StringEx.ConvertTo<bool>(Globals.Application.AppSetting("UseSSL"));
@@ -886,6 +901,7 @@ namespace GreenWerx.Web.api.v1
 
             if (emailRes.Code != 200)
             {
+              
                 return ServiceResponse.OK("Registration email failed to send. Check later for email confirmation.");
             }
 
@@ -968,6 +984,7 @@ namespace GreenWerx.Web.api.v1
             settings.MailHost = Globals.Application.AppSetting("MailHost");
             settings.MailPort = StringEx.ConvertTo<int>(Globals.Application.AppSetting("MailPort"));
             settings.SiteDomain = Globals.Application.AppSetting("SiteDomain");
+            settings.ApiUrl = Globals.Application.AppSetting("ApiUrl");
             settings.EmailDomain = Globals.Application.AppSetting("EmailDomain");
             settings.SiteEmail = Globals.Application.AppSetting("SiteEmail");
             settings.UseSSL = StringEx.ConvertTo<bool>(Globals.Application.AppSetting("UseSSL"));
@@ -1034,6 +1051,7 @@ namespace GreenWerx.Web.api.v1
             settings.MailHost = Globals.Application.AppSetting("MailHost");
             settings.MailPort = StringEx.ConvertTo<int>(Globals.Application.AppSetting("MailPort"));
             settings.SiteDomain = Globals.Application.AppSetting("SiteDomain");
+            settings.ApiUrl = Globals.Application.AppSetting("ApiUrl");
             settings.EmailDomain = Globals.Application.AppSetting("EmailDomain");
             settings.SiteEmail = Globals.Application.AppSetting("SiteEmail");
             settings.UseSSL = StringEx.ConvertTo<bool>(Globals.Application.AppSetting("UseSSL"));

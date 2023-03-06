@@ -268,28 +268,21 @@ namespace GreenWerx.WebAPI.api.v1
         //    return ServiceResponse.OK("", Inventory, count);
         //}
 
-        [ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
+        //[ApiAuthorizationRequired(Operator = ">=", RoleWeight = 10)]
         [System.Web.Http.HttpPost]
         [System.Web.Http.HttpGet]
         [System.Web.Http.Route("api/Inventory/Location/{locationUUID}")]
         public ServiceResult GetItemsForLocation(string locationUUID)
         {
-            if (CurrentUser == null)
-                return ServiceResponse.Error("You must be logged in to access this function.");
-
             InventoryManager inventoryManager = new InventoryManager(Globals.DBConnectionKey, this.GetAuthToken(Request));
-            List<dynamic> Inventory = (List<dynamic>)inventoryManager.GetItems(CurrentUser.AccountUUID).Cast<dynamic>().ToList();
-
-            Inventory = Inventory.Where(w => w.LocationUUID == locationUUID &&
-                                w.Deleted == false)
-                    .Cast<dynamic>().ToList();
-
-            int count;
+            List<dynamic> Inventory = (List<dynamic>)inventoryManager.GetItemsForLocation(locationUUID).Cast<dynamic>().ToList();
 
             DataFilter filter = this.GetFilter(Request);
             Inventory = Inventory.Filter( ref filter);
             return ServiceResponse.OK("", Inventory, filter.TotalRecordCount);
         }
+
+       
 
         //the original code to show items for a store
         // may not be needed.
@@ -495,12 +488,12 @@ namespace GreenWerx.WebAPI.api.v1
             {
                 Task<string> content = Request.Content.ReadAsStringAsync();
                 if (content == null)
-                    return ServiceResponse.Error("No permissions were sent.");
+                    return ServiceResponse.Error("No inventory was sent.");
 
                 string body = content.Result;
 
                 if (string.IsNullOrEmpty(body))
-                    return ServiceResponse.Error("No permissions were sent.");
+                    return ServiceResponse.Error("No inventory was sent.");
 
                 List<InventoryItem> changedItems = JsonConvert.DeserializeObject<List<InventoryItem>>(body);
 
